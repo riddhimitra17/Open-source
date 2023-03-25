@@ -1,0 +1,92 @@
+#include <LiquidCrystal.h>
+#include <stdio.h>
+
+struct Module {
+  uint8_t trig_pin;
+  uint8_t echo_pin;
+};
+
+Module front, right, back, left;
+constexpr unsigned int combined_echo_pin = 9;
+constexpr double sound_speed_cm_us = 0.0343;
+
+LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
+
+void initPin(const struct Module& _module){
+  pinMode(_module.trig_pin, OUTPUT);
+  pinMode(_module.echo_pin, INPUT);
+
+  return;
+}
+
+double measureDistance(const struct Module& _module){  
+  digitalWrite(_module.trig_pin, LOW);
+  delayMicroseconds(5);
+
+  digitalWrite(_module.trig_pin, HIGH);
+  delayMicroseconds(10);
+
+  digitalWrite(_module.trig_pin, LOW);
+  const auto duration = pulseIn(_module.echo_pin, HIGH);
+  const double distance = (static_cast<double>(duration) * sound_speed_cm_us) / 2;
+
+  return distance;
+}
+
+void setup()
+{
+  Serial.begin(115200);
+
+  front.trig_pin = 10;
+  front.echo_pin = combined_echo_pin;
+
+  right.trig_pin = 11;
+  right.echo_pin = combined_echo_pin;
+
+  back.trig_pin = 12;
+  back.echo_pin = combined_echo_pin;
+
+  left.trig_pin = 13;
+  left.echo_pin = combined_echo_pin;
+
+  initPin(front);
+  initPin(right);
+  initPin(back);
+  initPin(left);
+
+  lcd.begin(16, 2);
+
+}
+
+
+
+void loop()
+{
+  const int front_distance  = measureDistance(front);
+  const int right_distance = measureDistance(right);
+  const int back_distance = measureDistance(back);
+  const int left_distance = measureDistance(left);
+
+  //Serial.print("Front: ");
+  //Serial.println(front_distance);
+  //Serial.print("Right: ");
+  //Serial.println(right_distance);
+  //Serial.print("Back: ");
+  //Serial.println(back_distance);
+  //Serial.print("Left: ");
+  //Serial.println(left_distance);
+
+  char line1[16];
+  char line2[16];
+
+  sprintf(line1, "F: %d | B: %d", front_distance, back_distance);
+  sprintf(line2, "L: %d | R: %d", left_distance, right_distance);
+
+  lcd.setCursor(0, 0);
+  lcd.print(line1);
+
+  lcd.setCursor(0, 1);
+  lcd.print(line2);
+
+  delay(1);
+}
